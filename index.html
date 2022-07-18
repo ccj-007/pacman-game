@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style lang="">
+    .rec {
+      width: 50px;
+      height: 50px;
+    }
+
+    .road {
+      background: #aaa;
+    }
+
+    .wall {
+      background: #000;
+    }
+
+    .rowBox {
+      display: flex;
+    }
+
+    .robot {
+      background: red;
+      border-radius: 50%;
+    }
+
+    .food {
+      background: yellow;
+    }
+
+    .gui {
+      background: #fff;
+      border-radius: 50%;
+    }
+
+    #box {
+      background: #aaa;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="box">
+
+  </div>
+  <h2>
+    score： <span id="score">0</span>分
+  </h2>
+
+  <script>
+    const road = [
+      [0, 0, 0, 0, 9, 0, 1, 1, 1, 0, 1, 0, 1, 0],
+      [1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1, 0],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+      [1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0],
+      [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+      [1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0],
+      [1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+      [0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1],
+      [0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1],
+      [0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1],
+      [1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 10, 1],
+    ]
+    let robotPoint = [0, 0]
+    let ghostPoint = [-99, -99]
+    let fx = 'down'
+    let score = 0
+    let foodMaxNums = 5
+    let errorList = []  //错误边界时的幽灵坐标点的集合
+    let ghost_fx = [up, left, right, down]
+    function up (i, j) {
+      if (i - 1 >= 0 && road[i - 1][j] !== 1 && road[i - 1][j] !== 'x') {
+        road[i][j] = 'x'
+        road[i - 1][j] = 10
+        ghostPoint[0] = i - 1
+        ghostPoint[1] = j
+        return true
+      }
+      return false
+    }
+    function left (i, j) {
+      if (road[i][j - 1] !== 1 && road[i][j - 1] !== 'x' && j - 1 >= 0) {
+        road[i][j - 1] = 10
+        road[i][j] = 'x'
+        ghostPoint[0] = i
+        ghostPoint[1] = j - 1
+        return true
+
+      }
+      return false
+    }
+    function right (i, j) {
+      if (road[i][j + 1] !== 1 && road[i][j + 1] !== 'x' && j + 1 <= road[0].length - 1) {
+        road[i][j + 1] = 10
+        road[i][j] = 'x'
+        ghostPoint[0] = i
+        ghostPoint[1] = j + 1
+        return true
+
+      }
+      return false
+
+    }
+    function down (i, j) {
+      if (road[i + 1][j] !== 1 && road[i + 1][j] !== 'x' && i + 1 <= road.length - 1) {
+        road[i][j] = 'x'
+        road[i + 1][j] = 10
+        ghostPoint[0] = i + 1
+        ghostPoint[1] = j
+        return true
+
+      }
+      return false
+    }
+
+    const createFood = () => {
+      for (let i = 0; i < road.length; i++) {
+        const row = road[i];
+        for (let j = 0; j < row.length; j++) {
+          const col = row[j];
+
+          if (col === 0) {
+            console.log(Math.floor(Math.random() * 10));
+            if (Math.floor(Math.random() * 10) < 1) {
+              foodMaxNums--
+              road[i][j] = 2
+            }
+          }
+        }
+      }
+    }
+    createFood()
+
+    const createRec = () => {
+      let box = document.getElementById('box')
+      box.style.width = (road[0].length) * 50 + 'px'
+
+      for (let i = 0; i < road.length; i++) {
+        const row = road[i];
+        let rowBox = document.createElement('div')
+        rowBox.className = 'rowBox'
+        box.appendChild(rowBox)
+
+        for (let j = 0; j < row.length; j++) {
+          const col = row[j];
+          let rec = document.createElement('div')
+          if (col === 1) {
+            rec.className = 'rec wall'
+          } else if (col === 2) {
+            rec.className = 'rec food'
+          } else if (col === 9) {
+            rec.className = 'rec robot'
+          } else if (col === 10) {
+            rec.className = 'rec gui'
+          } else {
+            rec.className = 'rec road'
+          }
+          rowBox.appendChild(rec)
+        }
+      }
+    }
+    createRec()
+
+    const clear = () => {
+      let box = document.getElementById('box')
+      box.innerHTML = ''
+    }
+
+    //边界情况
+    const isBoundaryError = (i, j) => {
+      console.log(i, j);
+      if (i == -99 && j == -99) return false
+      let l = false, r = false, t = false, b = false
+
+      if (i - 1 < 0 || road[i - 1][j] === 1 || road[i - 1][j] === 'x') {
+        t = true
+      }
+      if (j - 1 < 0 || road[i][j - 1] === 1 || road[i][j - 1] === 'x') {
+        l = true
+      }
+      if (j + 1 >= road[0].length || road[i][j + 1] === 1 || road[i][j + 1] === 'x') {
+        r = true
+      }
+      if (i + 1 >= road.length || road[i + 1][j] === 1 || road[i + 1][j] === 'x') {
+        b = true
+      }
+      return t && b && l && r
+    }
+    const moveGhost = () => {
+      for (let i = 0; i < road.length; i++) {
+        const row = road[i];
+
+        for (let j = 0; j < row.length; j++) {
+          const col = row[j];
+
+          //幽灵
+          if (col === 10) {
+            //先选出未来上下左右可以走的路径, i上下，j左右
+            //先上，然后左、右下
+            //错误边界情况，清除'x'
+            if (isBoundaryError(ghostPoint[0], ghostPoint[1])) {
+              road.forEach((row, i) => {
+                row.forEach((col, j) => {
+                  if (col === 'x') {
+                    road[i][j] = 0
+                  }
+                })
+              })
+              console.log("sel边界");
+
+              //同时解决断头路问题
+              errorList.push(ghostPoint[0], ghostPoint[1])
+
+              for (let k = 0; k < errorList.length; k++) {
+                let item = errorList[k];
+                let sel = errorList.filter(it => {
+                  return (it[0] === item[0] && item[1] === it[1])
+                })
+                console.log("sel", sel.length);
+                if (sel.length >= 4) {
+                  //此时重复触发断头问题， 改变方向顺序
+                  ghost_fx.sort(() => {
+                    return Math.random() - 0.5;
+                  });
+                  console.log("sel ghost_fx", ghost_fx);
+                  errorList = []
+                }
+              }
+              return
+            }
+
+
+            for (let k = 0; k < fx.length; k++) {
+              const fn = ghost_fx[k];
+              let res = fn(i, j)
+              if (res) {
+                return
+              }
+            }
+
+          }
+        }
+      }
+    }
+    const moveRobot = (direction) => {
+      //i 代表上下， j代表左右
+      for (let i = 0; i < road.length; i++) {
+        const row = road[i];
+
+        for (let j = 0; j < row.length; j++) {
+          const col = row[j];
+
+          //robot
+          if (col === 9) {
+            switch (direction) {
+              case 'up':
+                if (i - 1 < 0) return //边界
+                if (road[i - 1][j] === 1) return  //如果是墙
+                if (road[i - 1][j] === 2) {
+                  addCount()
+                }
+                road[i][j] = 0
+                road[i - 1][j] = 9
+
+                robotPoint[0] = i - 1
+                robotPoint[1] = j
+                return
+
+              case 'down':
+                if (i + 1 > road.length - 1) return
+                if (road[i + 1][j] === 1) return
+                if (road[i + 1][j] === 2) {
+                  addCount()
+                }
+                road[i][j] = 0
+                road[i + 1][j] = 9
+
+
+                robotPoint[0] = i + 1
+                robotPoint[1] = j
+                return
+
+              case 'left':
+                if (j - 1 < 0) return
+                if (road[i][j - 1] === 1) return
+                if (road[i][j - 1] === 2) {
+                  addCount()
+                }
+                road[i][j - 1] = 9
+                road[i][j] = 0
+
+                robotPoint[0] = i
+                robotPoint[1] = j - 1
+                return
+
+              case 'right':
+                if (j + 1 > row.length - 1) return
+                if (road[i][j + 1] === 1) return
+                if (road[i][j + 1] === 2) {
+                  addCount()
+                }
+                road[i][j + 1] = 9
+                road[i][j] = 0
+
+                robotPoint[0] = i
+                robotPoint[1] = j + 1
+                return
+
+              default:
+                break;
+            }
+          }
+        }
+      }
+    }
+
+    const addCount = () => {
+      let scoreDOM = document.getElementById('score')
+      score += 20
+      scoreDOM.innerText = score
+    }
+
+    document.onkeydown = function (event) {
+      var e = event || window.event || arguments.callee.caller.arguments[0];
+
+      if (e && e.keyCode == 40) { //下
+        fx = 'down'
+      }
+      if (e && e.keyCode == 37) { //左
+        fx = 'left'
+      }
+      if (e && e.keyCode == 39) { //右
+        fx = 'right'
+      }
+      if (e && e.keyCode == 38) { // 上
+        fx = 'up'
+      }
+    };
+
+    let timer = setInterval(() => {
+      moveRobot(fx)
+      moveGhost()
+      clear()
+      createRec()
+      if (robotPoint[0] === ghostPoint[0] && robotPoint[1] === ghostPoint[1]) {
+        alert('游戏结束')
+        clearInterval(timer)
+      }
+      console.log(road);
+    }, 1000);
+
+
+
+  </script>
+
+</body>
+
+</html>
